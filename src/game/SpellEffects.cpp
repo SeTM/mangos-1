@@ -1415,6 +1415,15 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     ((Creature*)unitTarget)->ForcedDespawn(10000);
                     return;
                 }
+                case 39992:                                 // High Warlord Naj'entus: Needle Spine Targeting
+                {
+                    if (!unitTarget)
+                        return;
+
+                    // TODO - Cone Targeting; along wowwiki this spell should target "three random targets in a cone"
+                    m_caster->CastSpell(unitTarget, 39835, true);
+                    return;
+                }
                 case 40802:                                 // Mingo's Fortune Generator (Mingo's Fortune Giblets)
                 {
                     // selecting one from Bloodstained Fortune item
@@ -1791,6 +1800,18 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                             break;
                     }
 
+                    return;
+                }
+                case 48046:                                 // Use Camera
+                {
+                    if (!unitTarget)
+                        return;
+
+                    // No despawn expected, nor any change in dynamic flags/other flags.
+                    // Need internal way to track if credit has been given for this object.
+
+                    // Iron Dwarf Snapshot Credit
+                    m_caster->CastSpell(m_caster, 48047, true, m_CastItem, NULL, unitTarget->GetObjectGuid());
                     return;
                 }
                 case 49357:                                 // Brewfest Mount Transformation
@@ -2195,12 +2216,10 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     const uint32 spellShrink = 53805;
                     const uint32 spellTransf = 53806;
 
-                    if (Aura* pAura = m_caster->GetAura(spellShrink, EFFECT_INDEX_0))
+                    if (SpellAuraHolder* holder = m_caster->GetSpellAuraHolder(spellShrink))
                     {
-                        uint32 stackNum = pAura->GetStackAmount();
-
                         // chance to become pygmified (5, 10, 15 etc)
-                        if (roll_chance_i(stackNum*5))
+                        if (roll_chance_i(holder->GetStackAmount() * 5))
                         {
                             m_caster->RemoveAurasDueToSpell(spellShrink);
                             m_caster->CastSpell(m_caster, spellTransf, true);
@@ -2208,7 +2227,7 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                         }
                     }
 
-                    if (m_caster->HasAura(spellTransf, EFFECT_INDEX_0))
+                    if (m_caster->HasAura(spellTransf))
                         return;
 
                     m_caster->CastSpell(m_caster, spellShrink, true);
@@ -2340,6 +2359,23 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                         return;
 
                     m_caster->CastSpell(unitTarget,60934,true,NULL);
+                    return;
+                }
+                case 62105:                                 // To'kini's Blowgun
+                {
+                    if (!unitTarget || unitTarget->GetTypeId() != TYPEID_UNIT)
+                        return;
+
+                    // Sleeping Sleep
+                    unitTarget->CastSpell(unitTarget, 62248, true);
+
+                    // Although not really correct, it's needed to have access to m_caster later,
+                    // to properly process spell 62110 (cast from gossip).
+                    // Can possibly be replaced with a similar function that doesn't set any dynamic flags.
+                    ((Creature*)unitTarget)->SetLootRecipient(m_caster);
+
+                    unitTarget->setFaction(190);            // Ambient (neutral)
+                    unitTarget->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_OOC_NOT_ATTACKABLE);
                     return;
                 }
                 case 64385:                                 // Spinning (from Unusual Compass)
@@ -5466,6 +5502,10 @@ void Spell::DoSummonGuardian(SpellEffectIndex eff_idx, uint32 forceFaction)
 
         spawnCreature->SetSummonPoint(pos);
 
+        // Notify Summoner
+        if (m_caster->GetTypeId() == TYPEID_UNIT && ((Creature*)m_caster)->AI())
+            ((Creature*)m_caster)->AI()->JustSummoned(spawnCreature);
+
         DEBUG_LOG("Guardian pet (guidlow %d, entry %d) summoned (default). Counter is %d ", spawnCreature->GetGUIDLow(), spawnCreature->GetEntry(), spawnCreature->GetPetCounter());
     }
 }
@@ -5522,6 +5562,10 @@ void Spell::DoSummonVehicle(SpellEffectIndex eff_idx, uint32 forceFaction)
         vehicle->SetUInt32Value(UNIT_CREATED_BY_SPELL,m_spellInfo->Id);
         m_caster->CastSpell(vehicle, m_mountspell, true);
         DEBUG_LOG("Caster (guidlow %d) summon vehicle (guidlow %d, entry %d) and mounted with spell %d ", m_caster->GetGUIDLow(), vehicle->GetGUIDLow(), vehicle->GetEntry(), m_mountspell->Id);
+
+        // Notify Summoner
+        if (m_caster->GetTypeId() == TYPEID_UNIT && ((Creature*)m_caster)->AI())
+            ((Creature*)m_caster)->AI()->JustSummoned(vehicle);
     }
     else
         sLog.outError("Vehicle (guidlow %d, entry %d) NOT summoned by undefined reason. ", vehicle->GetGUIDLow(), vehicle->GetEntry());
@@ -6456,6 +6500,9 @@ void Spell::EffectSummonObjectWild(SpellEffectIndex eff_idx)
     // Wild object not have owner and check clickable by players
     map->Add(pGameObj);
 
+    // Store the GO to the caster
+    m_caster->AddWildGameObject(pGameObj);
+
     if(pGameObj->GetGoType() == GAMEOBJECT_TYPE_FLAGDROP && m_caster->GetTypeId() == TYPEID_PLAYER)
     {
         Player *pl = (Player*)m_caster;
@@ -6838,6 +6885,14 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                     // Removes snares and roots.
                     unitTarget->RemoveAurasAtMechanicImmunity(IMMUNE_TO_ROOT_AND_SNARE_MASK,30918,true);
                     break;
+                }
+                case 39835:                                 // Needle Spine (Warlord Najentus)
+                {
+                    if (!unitTarget)
+                        return;
+
+                    // TODO likely that this spell should have m_caster as Original caster, but conflicts atm with TARGET_ALL_FRIENDLY_UNITS_AROUND_CASTER
+                    unitTarget->CastSpell(unitTarget, 39968, true);
                 }
                 case 41055:                                 // Copy Weapon
                 {
@@ -9199,7 +9254,12 @@ void Spell::DoSummonCritter(SpellEffectIndex eff_idx, uint32 forceFaction)
 
     critter->SetSummonPoint(pos);
 
+    // Notify Summoner
+    if (m_caster->GetTypeId() == TYPEID_UNIT && ((Creature*)m_caster)->AI())
+        ((Creature*)m_caster)->AI()->JustSummoned(critter);
+
     DEBUG_LOG("New mini pet has guid %u", critter->GetGUIDLow());
+
 }
 
 void Spell::EffectKnockBack(SpellEffectIndex eff_idx)

@@ -596,10 +596,9 @@ void Spell::FillTargetMap()
                     case TARGET_ALL_ENEMY_IN_AREA_CHANNELED:
                     case TARGET_ALL_FRIENDLY_UNITS_IN_AREA:
                     case TARGET_AREAEFFECT_GO_AROUND_DEST:
-                    case TARGET_RANDOM_NEARBY_DEST:
                         // triggered spells get dest point from default target set, ignore it
                         if (!(m_targets.m_targetMask & TARGET_FLAG_DEST_LOCATION) || m_IsTriggeredSpell)
-                            if (WorldObject* castObject = GetAffectiveCasterObject())
+                            if (WorldObject* castObject = GetCastingObject())
                                 m_targets.setDestination(castObject->GetPositionX(), castObject->GetPositionY(), castObject->GetPositionZ());
                         SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetB[i], tmpUnitMap);
                         break;
@@ -619,6 +618,7 @@ void Spell::FillTargetMap()
                     case TARGET_POINT_AT_NW:
                     case TARGET_POINT_AT_SE:
                     case TARGET_POINT_AT_SW:
+                    case TARGET_RANDOM_NEARBY_DEST:
                         // need some target for processing
                         SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetA[i], tmpUnitMap);
                         SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetB[i], tmpUnitMap);
@@ -874,7 +874,7 @@ void Spell::prepareDataForTriggerSystem()
     // avoid triggering negative hit for only positive targets
     m_negativeEffectMask = 0x0;
     for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
-        if (!IsPositiveEffect(m_spellInfo->Id, SpellEffectIndex(i)))
+        if (!IsPositiveEffect(m_spellInfo, SpellEffectIndex(i)))
             m_negativeEffectMask |= (1<<i);
 
     // Hunter traps spells: Immolation Trap Effect, Frost Trap (triggering spell!!),
@@ -1668,6 +1668,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                 case 28796:                                 // Poison Bolt Volley
                 case 29213:                                 // Curse of the Plaguebringer
                 case 31298:                                 // Sleep
+                case 39992:                                 // Needle Spine Targeting (Warlord Najentus)
                 case 51904:                                 // Limiting the count of Summoned Ghouls
                 case 54522:
                     unMaxTargets = 3;
@@ -2016,7 +2017,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
             SpellTargets targetB = SPELL_TARGETS_AOE_DAMAGE;
 
             // Select friendly targets for positive effect
-            if (IsPositiveEffect(m_spellInfo->Id, effIndex))
+            if (IsPositiveEffect(m_spellInfo, effIndex))
                 targetB = SPELL_TARGETS_FRIENDLY;
 
             UnitList tempTargetUnitMap;
