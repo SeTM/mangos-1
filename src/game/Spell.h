@@ -28,11 +28,6 @@
 #include "Unit.h"
 #include "Player.h"
 
-#include "../../dep/tbb/include/tbb/concurrent_vector.h"
-#include <memory>
-
-#define MAX_SPELL_ID   100000
-
 class WorldSession;
 class WorldPacket;
 class DynamicObj;
@@ -408,8 +403,8 @@ class Spell
         void DoSummonSnakes(SpellEffectIndex eff_idx);
         void DoSummonVehicle(SpellEffectIndex eff_idx, uint32 forceFaction = 0);
 
-        void WriteSpellGoTargets( WorldPacket * data );
-        void WriteAmmoToPacket( WorldPacket * data );
+        void WriteSpellGoTargets(WorldPacket* data);
+        void WriteAmmoToPacket(WorldPacket* data);
 
         typedef std::list<Unit*> UnitList;
         void FillTargetMap();
@@ -596,11 +591,8 @@ class Spell
             SpellMissInfo reflectResult:8;
             uint8  effectMask:8;
             bool   processed:1;
-            bool   deleted:1;
         };
-        tbb::concurrent_vector<TargetInfo> m_UniqueTargetInfo;
         uint8 m_needAliveTargetMask;                        // Mask req. alive targets
-        bool m_destroyed;
 
         struct GOTargetInfo
         {
@@ -608,18 +600,21 @@ class Spell
             uint64 timeDelay;
             uint8  effectMask:8;
             bool   processed:1;
-            bool   deleted:1;
         };
-        tbb::concurrent_vector<GOTargetInfo> m_UniqueGOTargetInfo;
 
         struct ItemTargetInfo
         {
             Item  *item;
             uint8 effectMask;
-            bool   processed:1;
-            bool   deleted:1;
         };
-        tbb::concurrent_vector<ItemTargetInfo> m_UniqueItemInfo;
+
+        typedef std::list<TargetInfo>     TargetList;
+        typedef std::list<GOTargetInfo>   GOTargetList;
+        typedef std::list<ItemTargetInfo> ItemTargetList;
+
+        TargetList     m_UniqueTargetInfo;
+        GOTargetList   m_UniqueGOTargetInfo;
+        ItemTargetList m_UniqueItemInfo;
 
         void AddUnitTarget(Unit* target, SpellEffectIndex effIndex);
         void AddUnitTarget(uint64 unitGUID, SpellEffectIndex effIndex);
