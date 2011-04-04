@@ -66,6 +66,9 @@
 #include "AuctionHouseBot.h"
 #include "LFGMgr.h"
 
+#include "Database/QueryCounter.h"
+
+
 INSTANTIATE_SINGLETON_1( World );
 
 volatile bool World::m_stopEvent = false;
@@ -898,6 +901,12 @@ void World::LoadConfigSettings(bool reload)
     sLog.outString( "WORLD: VMap support included. LineOfSight:%i, getHeight:%i, indoorCheck:%i",
         enableLOS, enableHeight, getConfig(CONFIG_BOOL_VMAP_INDOOR_CHECK) ? 1 : 0);
     sLog.outString( "WORLD: VMap data directory is: %svmaps",m_dataPath.c_str());
+
+    
+        // we do that here, so the settings can be reloaded
+        sQueryCounter.SetEnabled(sConfig.GetBoolDefault("QueryCounter.Enabled", true));
+        sQueryCounter.SetDatabase(&CharacterDatabase);
+        sQueryCounter.SetStartTime(GetStartTime());
 }
 
 /// Initialize the World
@@ -1394,11 +1403,13 @@ void World::SetInitialWorldSettings()
     // Delete all characters which have been deleted X days before
     Player::DeleteOldCharacters();
 
+    //save data every 30 mins
+    m_timers[WUPDATE_QUERYCOUNTER].SetInterval(1800 * IN_MILLISECONDS);
+
     sLog.outString("Initialize AuctionHouseBot...");
     auctionbot.Initialize();
 
     sLog.outString("Starting Autobroadcast system by Xeross..." );
-
     sLog.outString( "WORLD: World initialized" );
 
     uint32 uStartInterval = WorldTimer::getMSTimeDiff(uStartTime, WorldTimer::getMSTime());
@@ -1586,6 +1597,12 @@ void World::Update(uint32 diff)
             m_timers[WUPDATE_AUTOBROADCAST].Reset();
             SendBroadcast();
         }
+    }
+
+    if(m_timers[WUPDATE_QUERYCOUNTER].Passed())
+    {
+        m_timers[WUPDATE_QUERYCOUNTER].Reset();
+        sQueryCounter.SaveData();
     }
 
     /// </ul>
