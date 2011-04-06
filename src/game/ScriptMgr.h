@@ -90,6 +90,8 @@ enum eScriptCommand
     SCRIPT_COMMAND_SET_RUN                  = 25,           // source=any, target=creature
                                                             // datalong= bool 0=off, 1=on
                                                             // datalong2=creature entry, datalong3=search radius
+    SCRIPT_COMMAND_ATTACK_START             = 26,           // source = Creature (or WorldObject when creature entry are defined), target = Player
+                                                            // datalong2 = creature entry (searching for a buddy, closest to source), datalong3 = creature search radius
 };
 
 #define MAX_TEXT_ID 4                                       // used for SCRIPT_COMMAND_TALK
@@ -244,6 +246,8 @@ struct ScriptInfo
             uint32 factionId;                               // datalong
             uint32 creatureEntry;                           // datalong2
             uint32 searchRadius;                            // datalong3
+            uint32 empty1;                                  // datalong4
+            uint32 flags;                                   // data_flags
         } faction;
 
         struct                                              // SCRIPT_COMMAND_MORPH_TO_ENTRY_OR_MODEL (23)
@@ -270,6 +274,15 @@ struct ScriptInfo
             uint32 creatureEntry;                           // datalong2
             uint32 searchRadius;                            // datalong3
         } run;
+
+        struct                                              // SCRIPT_COMMAND_ATTACK_START (26)
+        {
+            uint32 empty1;                                  // datalong
+            uint32 creatureEntry;                           // datalong2
+            uint32 searchRadius;                            // datalong3
+            uint32 empty2;                                  // datalong4
+            uint32 flags;                                   // data_flags
+        } attack;
 
         struct
         {

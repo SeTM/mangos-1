@@ -6915,6 +6915,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                         return;
 
                     unitTarget->CastSpell(unitTarget, 39682, true);
+                    break;
                 }
                 case 39684:                                 // Summon Gnomish Tonk
                 {
@@ -6922,6 +6923,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                         return;
 
                     unitTarget->CastSpell(unitTarget, 39683, true);
+                    break;
                 }
                 case 39835:                                 // Needle Spine (Warlord Najentus)
                 {
