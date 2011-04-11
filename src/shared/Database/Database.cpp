@@ -19,7 +19,6 @@
 #include "DatabaseEnv.h"
 #include "Config/Config.h"
 #include "Database/SqlOperations.h"
-#include "Database/QueryCounter.h"
 
 #include <ctime>
 #include <iostream>
@@ -292,8 +291,6 @@ bool Database::PExecuteLog(const char * format,...)
         }
     }
 
-    sQueryCounter.CountQuery(this, format);
-
     return Execute(szQuery);
 }
 
@@ -313,8 +310,6 @@ QueryResult* Database::PQuery(const char *format,...)
         return false;
     }
 
-    sQueryCounter.CountQuery(this, format);
-
     return Query(szQuery);
 }
 
@@ -333,8 +328,6 @@ QueryNamedResult* Database::PQueryNamed(const char *format,...)
         sLog.outError("SQL Query truncated (and not execute) for format: %s",format);
         return false;
     }
-
-    sQueryCounter.CountQuery(this, format);
 
     return QueryNamed(szQuery);
 }
@@ -380,8 +373,6 @@ bool Database::PExecute(const char * format,...)
         return false;
     }
 
-    sQueryCounter.CountQuery(this, format);
-
     return Execute(szQuery);
 }
 
@@ -401,8 +392,6 @@ bool Database::DirectPExecute(const char * format,...)
         sLog.outError("SQL Query truncated (and not execute) for format: %s",format);
         return false;
     }
-
-    sQueryCounter.CountQuery(this, format);
 
     return DirectExecute(szQuery);
 }

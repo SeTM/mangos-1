@@ -221,12 +221,9 @@ class MANGOS_DLL_SPEC Database
         //NO ASYNC TRANSACTIONS DURING SERVER STARTUP - ONLY DURING RUNTIME!!!
         void AllowAsyncTransactions() { m_bAllowAsyncTransactions = true; }
 
-        void SetIdent(char id) { m_ident = id; }
-        char GetIdent() const { return m_ident; }
-
     protected:
         Database() : m_pAsyncConn(NULL), m_pResultQueue(NULL), m_threadBody(NULL), m_delayThread(NULL),
-            m_logSQL(false), m_pingIntervallms(0), m_nQueryConnPoolSize(1), m_bAllowAsyncTransactions(false), m_iStmtIndex(-1), m_ident('X')
+            m_logSQL(false), m_pingIntervallms(0), m_nQueryConnPoolSize(1), m_bAllowAsyncTransactions(false), m_iStmtIndex(-1)
         {
             m_nQueryCounter = -1;
         }
@@ -309,6 +306,5 @@ class MANGOS_DLL_SPEC Database
         bool m_logSQL;
         std::string m_logsDir;
         uint32 m_pingIntervallms;
-        char m_ident;                                        // for query counter
 };
 #endif
