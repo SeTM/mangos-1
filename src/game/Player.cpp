@@ -23163,8 +23163,8 @@ void Player::_SaveEquipmentSets()
                     "item5=?, item6=?, item7=?, item8=?, item9=?, item10=?, item11=?, item12=?, item13=?, item14=?, "
                     "item15=?, item16=?, item17=?, item18=? WHERE guid=? AND setguid=? AND setindex=?");
 
-                stmt.addString(eqset.IconName);
                 stmt.addString(eqset.Name);
+                stmt.addString(eqset.IconName);
 
                 for (int i = 0; i < EQUIPMENT_SLOT_END; ++i)
                     stmt.addUInt32(eqset.Items[i]);
@@ -23855,23 +23855,46 @@ AreaLockStatus Player::GetAreaTriggerLockStatus(AreaTrigger const* at, Difficult
     if (getLevel() < at->requiredLevel && !sWorld.getConfig(CONFIG_BOOL_INSTANCE_IGNORE_LEVEL))
         return AREA_LOCKSTATUS_TOO_LOW_LEVEL;
 
-        // must have one or the other, report the first one that's missing
-    if ((at->requiredItem && !HasItemCount(at->requiredItem, 1)) ||
-        (at->requiredItem2 && !HasItemCount(at->requiredItem2, 1)))
+    // must have one or the other, report the first one that's missing
+    if (at->requiredItem)
+    {
+        if (!HasItemCount(at->requiredItem, 1) &&
+            (!at->requiredItem2 || !HasItemCount(at->requiredItem2, 1)))
+            return AREA_LOCKSTATUS_MISSING_ITEM;
+    }
+    else if(at->requiredItem2 && !HasItemCount(at->requiredItem2, 1))
         return AREA_LOCKSTATUS_MISSING_ITEM;
 
     bool isRegularTargetMap = GetDifficulty(mapEntry->IsRaid()) == REGULAR_DIFFICULTY;
 
-    if (!isRegularTargetMap &&
-        ((at->heroicKey && !HasItemCount(at->heroicKey, 1)) || 
-        (at->heroicKey2 && !HasItemCount(at->heroicKey2, 1))))
-        return AREA_LOCKSTATUS_MISSING_ITEM;
+    if (!isRegularTargetMap)
+    {
+        if (at->heroicKey)
+        {
+            if(!HasItemCount(at->heroicKey, 1) &&
+                (!at->heroicKey2 || !HasItemCount(at->heroicKey2, 1)))
+                return AREA_LOCKSTATUS_MISSING_ITEM;
+        }
+        else if(at->heroicKey2 && !HasItemCount(at->heroicKey2, 1))
+            return AREA_LOCKSTATUS_MISSING_ITEM;
+    }
 
-    if ((!isRegularTargetMap &&
-        (at->requiredQuestHeroic && !GetQuestRewardStatus(at->requiredQuestHeroic))) ||
-        (isRegularTargetMap &&
-        (at->requiredQuest && !GetQuestRewardStatus(at->requiredQuest))))
-        return AREA_LOCKSTATUS_QUEST_NOT_COMPLETED;
+    if (GetTeam() == ALLIANCE)
+    {
+        if ((!isRegularTargetMap &&
+            (at->requiredQuestHeroicA && !GetQuestRewardStatus(at->requiredQuestHeroicA))) ||
+            (isRegularTargetMap &&
+            (at->requiredQuestA && !GetQuestRewardStatus(at->requiredQuestA))))
+            return AREA_LOCKSTATUS_QUEST_NOT_COMPLETED;
+    }
+    else if (GetTeam() == HORDE)
+    {
+        if ((!isRegularTargetMap &&
+            (at->requiredQuestHeroicH && !GetQuestRewardStatus(at->requiredQuestHeroicH))) ||
+            (isRegularTargetMap &&
+            (at->requiredQuestH && !GetQuestRewardStatus(at->requiredQuestH))))
+            return AREA_LOCKSTATUS_QUEST_NOT_COMPLETED;
+    }
 
     return AREA_LOCKSTATUS_OK;
 };
@@ -24012,4 +24035,31 @@ void Player::_fillGearScoreData(Item* item, GearScoreMap* gearScore)
             break;
     }
 
+}
+
+uint8 Player::GetTalentsCount(uint8 tab)
+{
+    if (tab >2)
+        return 0;
+
+    uint8 talentCount = 0;
+
+    uint32 const* talentTabIds = GetTalentTabPages(getClass());
+
+    uint32 talentTabId = talentTabIds[tab];
+
+    for (PlayerTalentMap::iterator iter = m_talents[m_activeSpec].begin(); iter != m_talents[m_activeSpec].end(); ++iter)
+    {
+        PlayerTalent talent = (*iter).second;
+
+        if (talent.state == PLAYERSPELL_REMOVED)
+            continue;
+
+        // skip another tab talents
+        if(talent.m_talentEntry->TalentTab != talentTabId)
+            continue;
+
+        ++talentCount;
+    }
+    return talentCount;
 }
