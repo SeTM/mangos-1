@@ -3535,7 +3535,6 @@ void Spell::handle_immediate()
 
     for(TargetList::iterator ihit = m_UniqueTargetInfo.begin(); ihit != m_UniqueTargetInfo.end(); ++ihit)
         m_UniqueTargetBuffer.push(*ihit);
-    }
 
     while(!m_UniqueTargetBuffer.empty())
     {
@@ -3545,7 +3544,6 @@ void Spell::handle_immediate()
 
     for(GOTargetList::iterator ihit = m_UniqueGOTargetInfo.begin(); ihit != m_UniqueGOTargetInfo.end(); ++ihit)
         m_UniqueGOTargetBuffer.push(*ihit);
-    }
 
     while(!m_UniqueGOTargetBuffer.empty())
     {
